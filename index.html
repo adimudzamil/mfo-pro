@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PUBG Interactive Experience</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            touch-action: none; /* Prevents mobile browser pull-to-refresh and accidental zooming */
+        }
+
+        /* Back Button styled gracefully for both Desktop and Mobile Mobile */
+        #back-btn {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            padding: 14px 32px;
+            background: #ff3c00;
+            color: white;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 14px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 25px rgba(255, 60, 0, 0.4);
+            border-radius: 4px;
+            z-index: 10;
+        }
+        #back-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+        @media (hover: hover) {
+            #back-btn:hover {
+                background: #e03500;
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <button id="back-btn" onclick="resetView()">← Reset State</button>
+
+    <script>
+        // --- 1. Coordinates Mapping Matrix ---
+        // Defined via UV spaces (0.0 to 1.0 from bottom-left corner of the image)
+        // These stay perfectly fixed onto the image assets no matter the viewport sizing
+        const HOTSPOTS = {
+            helmet: { x: 0.11, y: 0.56, radius: 0.09 }, 
+            pepsi:  { x: 0.11, y: 0.43, radius: 0.08 },
+            vest:   { x: 0.24, y: 0.16, radius: 0.15 }
+        };
+
+        let isZoomed = false;
+
+        // --- 2. Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        
+        // Handles high-DPI displays (Retina displays on iPhones/Macs) smoothly
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // --- 3. Texture Initialization ---
+        const textureLoader = new THREE.TextureLoader();
+        const textureBefore = textureLoader.load('before.png', () => { updatePlaneScale(); });
+        const textureAfter = textureLoader.load('after.png');
+
+        // Fix for subtle textures updating artifacts on mobile iOS
+        textureBefore.minFilter = THREE.LinearFilter;
+        textureAfter.minFilter = THREE.LinearFilter;
+
+        // --- 4. Custom Cross-Platform GLSL Shader ---
+        const shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTexBefore: { value: textureBefore },
+                uTexAfter: { value: textureAfter },
+                uTransitionProgress: { value: 0.0 },
+                uEpicenter: { value: new THREE.Vector2(0.5, 0.5) },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying vec2 vUv;
+                uniform sampler2D uTexBefore;
+                uniform sampler2D uTexAfter;
+                uniform float uTransitionProgress;
+                uniform vec2 uEpicenter;
+                uniform vec2 uResolution;
+
+                void main() {
+                    vec2 aspectCorrectedUv = vUv;
+                    aspectCorrectedUv.x *= (uResolution.x / uResolution.y);
+                    
+                    vec2 correctedEpicenter = uEpicenter;
+                    correctedEpicenter.x *= (uResolution.x / uResolution.y);
+
+                    float dist = distance(aspectCorrectedUv, correctedEpicenter);
+                    float radius = uTransitionProgress * 2.5; 
+                    
+                    float edgeSmoothness = 0.18;
+                    float wave = smoothstep(radius - edgeSmoothness, radius, dist);
+
+                    vec4 colorBefore = texture2D(uTexBefore, vUv);
+                    vec4 colorAfter = texture2D(uTexAfter, vUv);
+
+                    gl_FragColor = mix(colorAfter, colorBefore, wave);
+                }
+            `
+        });
+
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const mesh = new THREE.Mesh(geometry, shaderMaterial);
+        scene.add(mesh);
+
+        // --- 5. Raycasting & Interaction Logic ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function handleInteraction(clientX, clientY) {
+            if (isZoomed) return;
+
+            // Normalize cross-platform mouse/touch coordinates (-1 to +1)
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(mesh);
+
+            if (intersects.length > 0) {
+                // Fetch the exact UV coordinate that was tapped on the picture
+                const uv = intersects[0].uv;
+                
+                // Scan matrix list to find if user tapped close to our target assets
+                for (const key in HOTSPOTS) {
+                    const spot = HOTSPOTS[key];
+                    const dist = Math.hypot(uv.x - spot.x, uv.y - spot.y);
+
+                    if (dist < spot.radius) {
+                        triggerExplosion(uv.x, uv.y);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Standard PC Clicks
+        window.addEventListener('click', (e) => handleInteraction(e.clientX, e.clientY));
+        
+        // Responsive iOS / Android Touch Support
+        window.addEventListener('touchstart', (e) => {
+            if(e.touches.length > 0) {
+                handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        // --- 6. Cinematic Animations ---
+        function triggerExplosion(clickX, clickY) {
+            isZoomed = true;
+            shaderMaterial.uniforms.uEpicenter.value.set(clickX, clickY);
+
+            const tl = gsap.timeline();
+
+            tl.to(shaderMaterial.uniforms.uTransitionProgress, {
+                value: 1.0,
+                duration: 1.3,
+                ease: "power2.out"
+            }, 0);
+
+            tl.to(mesh.scale, {
+                x: 2.5,
+                y: 2.5,
+                duration: 1.5,
+                ease: "expo.out"
+            }, 0);
+
+            const targetX = (0.5 - clickX) * 2.5;
+            const targetY = (clickY - 0.5) * 2.5;
+
+            tl.to(mesh.position, {
+                x: targetX,
+                y: targetY,
+                duration: 1.5,
+                ease: "expo.out",
+                onComplete: () => {
+                    document.getElementById('back-btn').classList.add('active');
+                }
+            }, 0);
+
+            // Kinetic Screen Shake (Works beautifully on mobile graphics chips)
+            tl.to(mesh.position, {
+                x: targetX + (Math.random() - 0.5) * 0.03,
+                y: targetY + (Math.random() - 0.5) * 0.03,
+                duration: 0.04,
+                repeat: 4,
+                yoyo: true
+            }, 0.05);
+        }
+
+        function resetView() {
+            document.getElementById('back-btn').classList.remove('active');
+
+            const tl = gsap.timeline();
+            tl.to(mesh.scale, { x: 1, y: 1, duration: 1.2, ease: "power3.inOut" }, 0);
+            tl.to(mesh.position, { x: 0, y: 0, duration: 1.2, ease: "power3.inOut" }, 0);
+            tl.to(shaderMaterial.uniforms.uTransitionProgress, {
+                value: 0.0,
+                duration: 0.9,
+                ease: "power2.inOut"
+            }, 0.1);
+
+            tl.call(() => { isZoomed = false; });
+        }
+
+        // --- 7. Aspect Ratio & Cover Logic ---
+        function updatePlaneScale() {
+            if (!textureBefore.image) return;
+            
+            const imageAspect = 3 / 4; // Native vertical/portrait matrix ratio of your image assets
+            const screenAspect = window.innerWidth / window.innerHeight;
+
+            if (screenAspect > imageAspect) {
+                mesh.scale.set(1, 1 / (screenAspect / imageAspect), 1);
+            } else {
+                mesh.scale.set((screenAspect / imageAspect), 1, 1);
+            }
+            
+            shaderMaterial.uniforms.uResolution.value.set(
+                window.innerWidth * window.devicePixelRatio, 
+                window.innerHeight * window.devicePixelRatio
+            );
+        }
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            updatePlaneScale();
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
