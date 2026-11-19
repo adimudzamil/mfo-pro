@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MFO-pro by 2100551</title>
+<meta name="theme-color" content="#12263a">
+<meta name="application-name" content="MFO-pro">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MFO-pro">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 :root{--bg:#eef2f5;--card:#fff;--tx:#14263a;--mut:#5d6f80;--bd:#d6dee5;--ac:#0f766e;--acx:#fff;--warn:#b45309;--bad:#b91c1c;--r:10px;box-sizing:border-box}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1722;--card:#15232f;--tx:#e6edf3;--mut:#91a4b5;--bd:#27394a;--ac:#2dd4bf;--acx:#06201d;--warn:#fbbf24;--bad:#f87171}}:root[data-theme=dark]{--bg:#0d1722;--card:#15232f;--tx:#e6edf3;--mut:#91a4b5;--bd:#27394a;--ac:#2dd4bf;--acx:#06201d;--warn:#fbbf24;--bad:#f87171;color-scheme:dark}.rule{border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:10px}.rule .hd{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.tb{margin-left:auto;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:99px;padding:6px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:36px}
@@ -65,11 +74,14 @@ table.rt{width:100%;border-collapse:collapse}
  body{background:#fff}header,nav,.noprint,section:not(#s-inv){display:none!important}
  main{padding:0;max-width:none}.sheetwrap{overflow:visible}.sheet{border:0;padding:0;min-width:0;max-width:none}
 }
+#pdfroot{position:absolute;left:-10000px;top:0;width:794px;max-width:none;min-width:0;margin:0;border:0;border-radius:0}#pdfroot .stamp{transform:none}
+#upb{background:var(--ac);color:var(--acx);padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;font-weight:600}#upb[hidden]{display:none}
+.tb[hidden]{display:none}input[type=search]{-webkit-appearance:none}
 </style>
 </head>
 <body>
 <header><div class="bar">
-<div class="brand"><b>MFO-pro</b><span>by 2100551</span><span id="ver" class="tag" style="background:rgba(255,255,255,.14);border:0;color:#fff"></span><button class="tb" id="tb" type="button">Night mode</button></div>
+<div class="brand"><b>MFO-pro</b><span>by 2100551</span><span id="ver" class="tag" style="background:rgba(255,255,255,.14);border:0;color:#fff"></span><span style="margin-left:auto;display:flex;gap:8px"><button class="tb" id="ib" type="button" hidden style="margin-left:0">Install app</button><button class="tb" id="tb" type="button" style="margin-left:0">Night mode</button></span></div>
 <nav id="nav">
 <button data-t="new" class="on">New transaction</button>
 <button data-t="inv">Invoices</button>
@@ -77,6 +89,7 @@ table.rt{width:100%;border-collapse:collapse}
 <button data-t="rates">Exchange rates</button>
 <button data-t="set">Destinations</button><button data-t="guide">Guide</button><button data-t="upd">Updates</button>
 </nav></div></header>
+<div id="upb" hidden><span>A new version is ready.</span><button class="btn" id="upr" type="button">Reload</button></div>
 <main>
 
 <section id="s-new" class="on"><div class="grid two">
@@ -107,12 +120,16 @@ table.rt{width:100%;border-collapse:collapse}
 
 <section id="s-inv"><div class="noprint">
  <div class="sw" id="sw"><button class="btn on" data-k="c">Customer</button><button class="btn" data-k="o">Operator statement</button><button class="btn" data-k="t">Transporter</button></div>
- <div class="row" style="margin:0 0 14px"><button class="btn p" id="pr">Print / save as PDF</button><button class="btn" id="sv">Save to history</button></div></div>
+ <div class="row" style="margin:0 0 14px"><button class="btn p" id="pdf">Save PDF</button><button class="btn p" id="shr">Share PDF</button><button class="btn" id="pr">Print</button><button class="btn" id="jx">Backup file (.json)</button></div><p class="note" id="sst" style="margin:-4px 0 12px"></p></div>
  <div class="sheetwrap"><div class="sheet" id="sheet"></div></div>
  <p class="note noprint" id="ie">Generate invoices from the New transaction tab first.</p>
 </section>
 
-<section id="s-hist"><div class="card"><h2>Saved transactions</h2><div id="hl"></div></div></section>
+<section id="s-hist"><div class="card"><h2>Saved invoices <span class="tag" id="hc"></span></h2>
+<input id="hq" type="search" placeholder="Search invoice no., customer, transporter, date">
+<div class="row"><button class="btn" id="hx">Export all</button><button class="btn" id="hi">Import backup files</button><input id="hf" type="file" accept=".json,application/json" multiple hidden></div>
+<label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-size:15px;margin-top:12px"><input id="ai" type="checkbox" style="width:auto;min-height:0"> Download a backup file automatically after every invoice</label>
+<p class="note" id="hm"></p><div id="hl"></div></div></section>
 
 <section id="s-rates"><div class="card"><h2>Daily exchange rates</h2>
  <div class="note" style="margin:0 0 8px" id="rs"></div>
@@ -155,7 +172,7 @@ table.rt{width:100%;border-collapse:collapse}
 <li>Enter the capital you used, the amount the customer paid and the total weight. Pick a currency for each amount if it wasn’t RM.</li>
 <li>Check the exchange rate. It fills in from the live rates. Type your own to override it (the label changes to “manual”). Press <b>Use live rate</b> to go back.</li>
 <li>Read the calculation beside the form (below it on a phone).</li>
-<li>Press <b>Generate invoices</b>. Switch between Customer, Operator statement and Transporter, then press <b>Print / save as PDF</b> and <b>Save to history</b>.</li></ol>
+<li>Press <b>Generate invoices</b>. Switch between Customer, Operator statement and Transporter, then press <b>Save PDF</b> or <b>Share PDF</b>. The invoice is saved to <b>History</b> automatically and a backup file downloads.</li></ol>
 <p class="note">Press <b>Load test example</b> to fill in a sample transaction: capital RM153, customer paid RM305.64, 10.2 kg at 2.83.</p></details>
 <details><summary>What each input means</summary><ul>
 <li><b>Capital</b>: your own money used to buy the items. Choose the currency you spent. The box beside it shows the amount in RM as you type.</li>
@@ -172,7 +189,7 @@ table.rt{width:100%;border-collapse:collapse}
 <li><b>Customer</b>: items, weight, route and total paid. It does not show your capital or profit.</li>
 <li><b>Operator statement</b>: your full breakdown, including profit, commission, incentive and what you keep.</li>
 <li><b>Transporter</b>: the commission and incentive working, the rounded payout and whether it is paid.</li></ul>
-<p>Each invoice gets a number like MFO-ADL-261113-001. Use your browser’s print dialog to save as PDF.</p></details>
+<p>Each invoice gets a number like MFO-ADL-261113-001. The PDF file is named after the number, for example MFO-ADL-261119-001.pdf for the customer invoice, MFO-ADL-261119-001-statement.pdf for your statement and MFO-ADL-261119-001-payout.pdf for the transporter. On a PC, <b>Save PDF</b> goes to Downloads. On a phone, <b>Share PDF</b> opens the share sheet (WhatsApp, email, Drive). <b>Print</b> also uses the invoice number as the file name.</p></details>
 <details><summary>Destinations and rules</summary><ul>
 <li>Press <b>Add destination</b> and fill in the code, city, currency, commission % and fee per kg.</li>
 <li><b>Applies to</b> sets whether a rule covers both directions or only one. A one-direction rule overrides the “both” rule for that direction.</li>
@@ -180,12 +197,13 @@ table.rt{width:100%;border-collapse:collapse}
 <li>Use <b>Copy</b> to start a new destination from a similar one.</li>
 <li>Changes apply to new transactions. Saved invoices keep the rules they were made with.</li></ul></details>
 <details><summary>Exchange rates</summary><p>The <b>Exchange rates</b> tab shows the latest rates against MYR with their date. They update when you open the app online and are kept for offline use. Press <b>Refresh rates</b> to update by hand.</p></details>
-<details><summary>History</summary><p>Saved transactions appear in <b>History</b>. Open one to see its invoices again or to reuse its details. Delete removes it from this device.</p></details>
+<details><summary>History and invoice backups</summary><ul><li>Every time you press <b>Generate invoices</b>, the invoice is saved to <b>History</b> and a file named after the invoice number (for example MFO-ADL-261119-001.json) downloads to your device. You can turn the automatic download off in History.</li><li>In <b>History</b>, press <b>Open</b> to see the three invoices again or reuse the details, <b>PDF</b> to save the customer invoice, or search by number, name or date.</li><li><b>Export all</b> saves the whole list in one file. <b>Import backup files</b> restores one or many files at once, on this or a new device. Invoices with the same number are replaced, not doubled.</li><li>Delete removes an invoice from this device only. Backup files you already downloaded are not touched.</li></ul></details>
 <details><summary>Backups: keeping your settings safe</summary><ul>
 <li>Everything is stored in this browser on this device only.</li>
 <li>A backup file downloads each time you save a destination. Keep the latest one in a safe place, such as your cloud drive.</li>
 <li>On a new device, open <b>Destinations</b>, press <b>Import backup</b> and choose the file.</li>
-<li>The <b>Last backups</b> list lets you restore or download recent versions.</li></ul></details>
+<li>The <b>Last backups</b> list lets you restore or download recent versions.</li><li>Invoices have their own backup files. See <b>History and invoice backups</b>.</li></ul></details>
+<details><summary>Install as an app</summary><ul><li><b>Android (Chrome)</b>: press <b>Install app</b> at the top, or the browser menu then <b>Install app</b>.</li><li><b>iPhone (Safari)</b>: press Share, then <b>Add to Home Screen</b>.</li><li><b>PC (Chrome or Edge)</b>: press <b>Install app</b> at the top, or the install icon in the address bar.</li><li>Once installed it opens full-screen and works offline. Exchange rates need internet to refresh.</li><li>When a new version is published, a bar appears at the top. Press <b>Reload</b> to update.</li></ul></details>
 <details><summary>Day and night mode</summary><p>Press the button at the top right. It follows your phone’s setting until you choose, then remembers your choice. Printed invoices always stay white.</p></details>
 </div></section>
 <section id="s-upd"><div class="card"><h2>Version history</h2><div id="ul"></div></div></section>
@@ -304,8 +322,8 @@ document.querySelectorAll('#s-new input,#s-new select').forEach(e=>e.addEventLis
  if(e.id==='fx'){manual=true;tagRate()}calcUI()}));
 
 /* invoices */
-function seq(){const n=(store.get('mfo_seq',0)||0)+1;store.set('mfo_seq',n);const d=new Date();const y=String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');return`MFO-ADL-${y}-${String(n).padStart(3,'0')}`}
-function gen(){const t=read();if(!t.paid||!t.tr){alert('Enter the transporter and the amount the customer paid.');return}if(!cur||!cur.no)t.no=seq();else t.no=cur.no;cur=t;kind='c';tab('inv');sheet()}
+function seq(c){const n=(store.get('mfo_seq',0)||0)+1;store.set('mfo_seq',n);const d=new Date();const y=String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');return`MFO-${c||'ADL'}-${y}-${String(n).padStart(3,'0')}`}
+function gen(){const t=read();if(!t.paid||!t.tr){alert('Enter the transporter and the amount the customer paid.');return}if(!cur||!cur.no)t.no=seq(t.dest);else t.no=cur.no;cur=t;kind='c';tab('inv');sheet();autoSave()}
 function head(t,title,to,who){const dt=t.date?new Date(t.date+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'';
  return`<div class="sh"><div><h1>MFO-pro</h1><div class="muted">by 2100551</div></div><div class="r"><b style="font-size:18px">${title}</b><div class="muted">No. ${esc(t.no)}</div><div class="muted">${dt}</div></div></div>
  <div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap"><div><div class="muted">${to}</div><b style="font-size:16px">${esc(who||'—')}</b></div><div class="r"><div class="muted">Route</div><b>${esc(t.dir)}</b></div></div>`}
@@ -345,17 +363,7 @@ function sheet(){
 }
 $('#sw').onclick=e=>{if(e.target.dataset.k){kind=e.target.dataset.k;sheet()}};
 $('#gen').onclick=gen;
-$('#pr').onclick=()=>{if(cur)print()};
-$('#sv').onclick=()=>{if(!cur)return;const h=store.get('mfo_hist',[]).filter(x=>x.no!==cur.no);h.unshift(cur);store.set('mfo_hist',h);$('#sv').textContent='Saved';setTimeout(()=>$('#sv').textContent='Save to history',1500)};
 
-/* history */
-function hist(){
- const h=store.get('mfo_hist',[]);
- $('#hl').innerHTML=h.length?h.map((t,i)=>{const c=calc(t);return`<div class="hist"><div><b>${esc(t.no)}</b><div class="note" style="margin:0">${esc(t.date)} · ${esc(t.cust||'No customer name')} · ${esc(t.tr)}</div></div><div class="num"><b>${m(c.payout)}</b></div><div><button class="btn" data-o="${i}">Open</button> <button class="btn" data-d="${i}">Delete</button></div></div>`}).join(''):'<p class="note">Nothing saved yet. Generate an invoice, then press Save to history.</p>';
-}
-$('#hl').onclick=e=>{const h=store.get('mfo_hist',[]);
- if(e.target.dataset.o!==undefined){cur=h[+e.target.dataset.o];fill(cur);kind='c';tab('inv');sheet()}
- if(e.target.dataset.d!==undefined&&confirm('Delete this saved transaction?')){h.splice(+e.target.dataset.d,1);store.set('mfo_hist',h);hist()}};
 function fill(t){fillDest(t.dest||'ADL');fillDir(t.dk||'out');fillCur(t.capCur,t.paidCur);['date','op','tr','cust','kg','fx','pm','st'].forEach(k=>$('#'+k).value=t[k]);$('#cap').value=t.capAmt??t.cap;$('#capc').value=t.capCur||'MYR';$('#paid').value=t.paidAmt??t.paid;$('#paidc').value=t.paidCur||'MYR';manual=true;$('#cl').textContent=curRule().cur;tagRate();calcUI()}
 
 /* rules */
@@ -414,9 +422,91 @@ $('#rl').onclick=()=>useLive(true);
 $('#rf').onclick=loadRates;
 $('#clr').onclick=()=>{['cap','paid','kg','cust','tr'].forEach(k=>$('#'+k).value='');$('#capc').value=$('#paidc').value='MYR';cur=null;useLive(true)};
 
+/* ===== v2.0: PDF files, auto backup, history, PWA ===== */
+const HW=[278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584],HB=[278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
+const SFX={c:'',o:'-statement',t:'-payout'},fname=(t,k)=>(t.no||'invoice')+(SFX[k]||'')+'.pdf';
+const pw=(s,b,fs)=>{const W=b?HB:HW;let w=0;for(const ch of s){const c=ch.charCodeAt(0);w+=c>=32&&c<127?W[c-32]:556}return w*fs/1000};
+const WIN={'\u2019':'\x92','\u2018':'\x91','\u201c':'\x93','\u201d':'\x94','\u2013':'\x96','\u2014':'\x97','\u2022':'\x95','\u2026':'\x85','\u20ac':'\x80','\u2212':'-','\u2192':'->','\u2190':'<-'};
+const enc=s=>[...s].map(ch=>WIN[ch]||(ch.charCodeAt(0)<256?ch:'?')).join('');
+const pcol=s=>{const m=/rgba?\(([^)]+)\)/.exec(s);if(!m)return null;const a=m[1].split(',').map(parseFloat);return a.length>3&&a[3]===0?null:a.slice(0,3).map(v=>(v/255).toFixed(3)).join(' ')};
+function pdfOf(t,k){
+ const pk=kind,pc=cur;cur=t;kind=k;sheet();const html=$('#sheet').innerHTML;kind=pk;cur=pc;if(pc)sheet();
+ const R=document.createElement('div');R.className='sheet';R.id='pdfroot';R.innerHTML=html;document.body.appendChild(R);
+ const PW=595.28,PH=841.89,K=.75,rb=R.getBoundingClientRect(),S=Math.min(1,(PH-10)/Math.max(R.scrollHeight*K,1));
+ const X=x=>(x-rb.left)*K*S,Y=y=>PH-(y-rb.top)*K*S;let g='',tx='';
+ const rect=(x,y,w,h,c)=>{g+=`${c} rg ${X(x).toFixed(2)} ${Y(y+h).toFixed(2)} ${(w*K*S).toFixed(2)} ${(h*K*S).toFixed(2)} re f\n`};
+ for(const e of R.querySelectorAll('*')){const cs=getComputedStyle(e),r=e.getBoundingClientRect();if(!r.width)continue;
+  const bg=pcol(cs.backgroundColor);if(bg)rect(r.left,r.top,r.width,r.height,bg);
+  for(const [s,f] of [['Top',w=>[r.left,r.top,r.width,w]],['Bottom',w=>[r.left,r.bottom-w,r.width,w]],['Left',w=>[r.left,r.top,w,r.height]],['Right',w=>[r.right-w,r.top,w,r.height]]]){
+   const w=parseFloat(cs['border'+s+'Width']);if(w>0&&cs['border'+s+'Style']!=='none'){const c=pcol(cs['border'+s+'Color']);if(c)rect(...f(w),c)}}}
+ const tw=document.createTreeWalker(R,NodeFilter.SHOW_TEXT);let n;
+ while(n=tw.nextNode()){if(!n.nodeValue.trim())continue;const cs=getComputedStyle(n.parentElement),b=+cs.fontWeight>=600,fs=parseFloat(cs.fontSize)*K*S,c=pcol(cs.color)||'0 0 0',re=/\S+/g;let m;
+  while(m=re.exec(n.nodeValue)){const rg=document.createRange();rg.setStart(n,m.index);rg.setEnd(n,m.index+m[0].length);const r=rg.getClientRects()[0];if(!r)continue;
+   const s=enc(m[0]),w0=pw(s,b,fs),tz=w0?Math.max(80,Math.min(125,r.width*K*S/w0*100)):100;
+   tx+=`BT /${b?'F2':'F1'} ${fs.toFixed(2)} Tf ${tz.toFixed(1)} Tz ${c} rg 1 0 0 1 ${X(r.left).toFixed(2)} ${Y(r.top+r.height*.8).toFixed(2)} Tm (${s.replace(/[\\()]/g,'\\$&')}) Tj ET\n`}}
+ R.remove();
+ const ct=g+tx,o=['','<</Type/Catalog/Pages 2 0 R>>','<</Type/Pages/Kids[3 0 R]/Count 1>>',
+  `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PW} ${PH}]/Contents 4 0 R/Resources<</Font<</F1 5 0 R/F2 6 0 R>>>>>>`,
+  `<</Length ${ct.length}>>\nstream\n${ct}endstream`,
+  '<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>','<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>'];
+ let out='%PDF-1.4\n',off=[];for(let i=1;i<=6;i++){off[i]=out.length;out+=`${i} 0 obj\n${o[i]}\nendobj\n`}
+ const xr=out.length;out+='xref\n0 7\n0000000000 65535 f \n'+off.slice(1).map(v=>String(v).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<</Size 7/Root 1 0 R/Info<</Title(${String(t.no).replace(/[^\w-]/g,'')})>>>>\nstartxref\n${xr}\n%EOF`;
+ const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
+ return new Blob([u],{type:'application/pdf'});
+}
+function saveBlob(b,name){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+const say=s=>{$('#sst').textContent=s};
+$('#pdf').onclick=()=>{if(!cur)return;try{saveBlob(pdfOf(cur,kind),fname(cur,kind));say('Saved '+fname(cur,kind)+' to your Downloads.')}catch(e){say('Could not build the PDF. Use Print instead.')}};
+$('#shr').onclick=async()=>{if(!cur)return;try{const f=new File([pdfOf(cur,kind)],fname(cur,kind),{type:'application/pdf'});
+ if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:cur.no});else{saveBlob(f,f.name);say('Sharing is not available here, so the PDF was downloaded.')}}
+ catch(e){if(e.name!=='AbortError')say('Could not share. Use Save PDF.')}};
+if(!navigator.share)$('#shr').hidden=true;
+const ORIG=document.title;addEventListener('afterprint',()=>{document.title=ORIG});
+$('#pr').onclick=()=>{if(!cur)return;document.title=fname(cur,kind).slice(0,-4);print();setTimeout(()=>{document.title=ORIG},3000)};
+
+const hs=()=>store.get('mfo_hist',[]),autoInv=()=>store.get('mfo_autoinv',true);
+const packInv=t=>({app:'MFO-pro',type:'invoice',version:APP_VERSION,saved:new Date().toISOString(),invoice:t});
+$('#jx').onclick=()=>{if(cur)dl(cur.no+'.json',packInv(cur))};
+function autoSave(){const t=cur;if(!t)return;const h=hs(),i=h.findIndex(x=>x.no===t.no),same=i>=0&&JSON.stringify(h[i])===JSON.stringify(t);
+ if(i>=0)h.splice(i,1);h.unshift(t);store.set('mfo_hist',h);
+ if(!same&&autoInv()){dl(t.no+'.json',packInv(t));say('Saved to History. Backup file '+t.no+'.json downloaded.')}else say(same?'Already saved in History.':'Saved to History.')}
+function cleanInv(o){const t=o&&(o.invoice||o);if(!t||typeof t.no!=='string'||!t.no||!t.rule||typeof t.rule!=='object')return null;
+ const N=v=>+v||0,S=v=>String(v??''),r={...t.rule};
+ for(const k of['rate','inc','tkg','tinc','cfee','ctkg','cftinc','splitPerKg'])if(r[k]!==undefined)r[k]=N(r[k]);
+ r.code=S(r.code).toUpperCase().slice(0,4);r.cur=S(r.cur||'AUD').slice(0,3);r.ccur=S(r.ccur||'MYR').slice(0,3);r.id=S(r.id||r.code);
+ const x={...t,no:S(t.no).replace(/[^\w-]/g,'').slice(0,40),rule:r,date:S(t.date).slice(0,10),dest:S(t.dest||r.code),dk:t.dk==='in'?'in':'out',st:t.st==='Paid'?'Paid':'Pending',cap:N(t.cap),paid:N(t.paid),kg:N(t.kg),fx:N(t.fx),capAmt:N(t.capAmt??t.cap),paidAmt:N(t.paidAmt??t.paid),capRate:N(t.capRate),paidRate:N(t.paidRate),capCur:S(t.capCur||'MYR').slice(0,3),paidCur:S(t.paidCur||'MYR').slice(0,3)};
+ if(t.irate!==undefined)x.irate=N(t.irate);if(t.crate!==undefined)x.crate=N(t.crate);return x.no?x:null}
+function hist(){const q=($('#hq').value||'').toLowerCase(),h=hs();$('#ai').checked=autoInv();
+ const L=h.map((t,i)=>[t,i]).filter(([t])=>!q||[t.no,t.cust,t.tr,t.date,t.dest].join(' ').toLowerCase().includes(q));
+ $('#hl').innerHTML=L.length?L.map(([t,i])=>{const c=calc(t);return`<div class="hist"><div><b>${esc(t.no)}</b><div class="note" style="margin:0">${esc(t.date)} · ${esc(t.cust||'No customer name')} · ${esc(t.tr)}</div></div><div class="num"><b>${m(c.payout)}</b></div><div><button class="btn" data-o="${i}">Open</button> <button class="btn" data-p="${i}">PDF</button> <button class="btn" data-d="${i}">Delete</button></div></div>`}).join(''):`<p class="note">${h.length?'No match.':'Nothing here yet. Invoices are saved here automatically when you press Generate invoices.'}</p>`;
+ $('#hc').textContent=h.length+' saved'}
+$('#hq').oninput=hist;
+$('#hl').onclick=e=>{const d=e.target.dataset,h=hs();
+ if(d.o!==undefined){cur=h[+d.o];fill(cur);kind='c';tab('inv');sheet();say('')}
+ if(d.p!==undefined){const t=h[+d.p];try{saveBlob(pdfOf(t,'c'),fname(t,'c'));$('#hm').textContent='Saved '+fname(t,'c')+'.'}catch(x){$('#hm').textContent='Could not build the PDF.'}}
+ if(d.d!==undefined&&confirm('Delete this saved invoice from this device?')){h.splice(+d.d,1);store.set('mfo_hist',h);hist()}};
+$('#ai').onchange=e=>store.set('mfo_autoinv',e.target.checked);
+$('#hx').onclick=()=>{dl('mfo-pro-history-'+stamp()+'.json',{app:'MFO-pro',type:'history',version:APP_VERSION,saved:new Date().toISOString(),invoices:hs()});$('#hm').textContent='History exported.'};
+$('#hi').onclick=()=>$('#hf').click();
+$('#hf').onchange=async e=>{const fs=[...e.target.files];e.target.value='';let add=0,upd=0,bad=0;const h=hs();
+ for(const f of fs){try{const o=JSON.parse(await f.text());if(o.app!=='MFO-pro')throw 0;
+  for(const x of(o.invoices||[o.invoice||o])){const t=cleanInv(x);if(!t)throw 0;const i=h.findIndex(y=>y.no===t.no);if(i>=0){h[i]=t;upd++}else{h.push(t);add++}}}catch(x){bad++}}
+ h.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.no.localeCompare(a.no));store.set('mfo_hist',h);
+ $('#hm').textContent=`Added ${add}, updated ${upd}${bad?`, ${bad} file(s) not valid`:''}.`;hist()};
+
+let dip=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;$('#ib').hidden=false});
+$('#ib').onclick=async()=>{if(!dip)return;dip.prompt();try{await dip.userChoice}catch(x){}dip=null;$('#ib').hidden=true};
+addEventListener('appinstalled',()=>{$('#ib').hidden=true});
+$('#upr').onclick=()=>location.reload();
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){const had=!!navigator.serviceWorker.controller;
+ navigator.serviceWorker.register('sw.js').catch(()=>{});
+ navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)$('#upb').hidden=false})}
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+
 /* start */
 $('#date').value=new Date().toISOString().slice(0,10);$('#op').value=cfg.op;
 const LOG=[
+{v:'2.0',d:'19 Nov 2026',t:['Now an installable app (PWA): add it to your phone or PC home screen, opens full-screen and works offline','PDFs are real files named after the invoice number, for example MFO-ADL-261119-001.pdf','Statement and payout PDFs add -statement and -payout to the same number','Save PDF downloads to your device; Share PDF opens the phone share sheet (WhatsApp, email, Drive)','Invoices save to History automatically when you press Generate invoices, and a backup file (invoice number .json) downloads each time','History: search, open, PDF per invoice, export all, and import one or many backup files','Invoice numbers now carry the destination code, for example MFO-DOH-261119-002','The app offers a Reload bar when a new version is published']},
 {v:'1.9',d:'13 Nov 2026',t:['DOH incentive is now shared between the operator and the transporter','The transporter gets RM 15 per kg of the QAR cargo fee; the rest goes to the operator','Other destinations are unchanged','Customer invoice is unchanged; the split shows on the operator statement and the transporter payout']},
 {v:'1.8',d:'13 Nov 2026',t:['Corrected the Doha cargo fee: it is what you pay the transporter, not a charge to the customer','Doha cargo fee: QAR 25 per kg for 10 kg or less, QAR 20 per kg on the whole load above 10 kg (10 kg = QAR 250, 11 kg = QAR 220)','The transporter gets 58% commission plus the cargo fee; what is left of profit is yours','Removed the customer cargo fee section added in v1.7']},
 {v:'1.7',d:'13 Nov 2026',t:['Destination rules now have two parts: transporter pay and cargo fee charged to the customer','Doha cargo fee: QAR 25 per kg up to 10 kg, QAR 20 per kg on the whole load above 10 kg (10 kg = QAR 250, 11 kg = QAR 220)','The cargo fee counts toward your earning and shows on the customer invoice and your statement','Doha transporter is paid 58% commission plus a flat RM15 per kg','The incentive currency can be MYR for flat RM rates']},
